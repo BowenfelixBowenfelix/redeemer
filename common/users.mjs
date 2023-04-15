@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, ServerApiVersion } from "mongodb";
 import { utils } from "ethers";
 
 const dbName = process.env.VITE_MONGODB_NAME;
@@ -56,7 +56,17 @@ export const getUser = async (address) => {
 export const userHasRedeemed = async (address) => {
   let ethAddress = utils.getAddress(address);
 
-  const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
+  const client = new MongoClient(URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  // const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
   const db = client.db(dbName);
   const collection = db.collection("users");
 
