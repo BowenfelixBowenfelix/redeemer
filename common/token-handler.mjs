@@ -8,10 +8,21 @@ const URI = process.env.VITE_MONGODB_URL;
 const dbName = process.env.VITE_MONGODB_NAME;
 const scAddress = process.env.VITE_CONTRACT_ADDRESS;
 
+// const client = new MongoClient(URI, {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+//   serverApi: ServerApiVersion.v1,
+// });
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverApi: ServerApiVersion.v1,
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 });
 
 
