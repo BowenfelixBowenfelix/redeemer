@@ -1,34 +1,31 @@
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient } from "mongodb";
 import { utils } from "ethers";
-import { MongoPool } from "./mongo.mjs";
 
 const dbName = process.env.VITE_MONGODB_NAME;
 const URI = process.env.VITE_MONGODB_URL;
 
 export const userRedeemBlack = async (ethaddress) => {
-  const client = await MongoPool.acquire();
-  try {
-    console.debug("Updating black ");
-    const db = client.db(dbName);
-    const collection = db.collection("users");
+  console.debug("Updating black ");
+  const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
+  const db = client.db(dbName);
+  const collection = db.collection("users");
 
-    const alreadyRedeemed = await collection.findOne({
-      address: ethaddress,
-      blackRedeemed: true,
-    });
+  const alreadyRedeemed = await collection.findOne({
+    address: ethaddress,
+    blackRedeemed: true,
+  });
 
-    if (alreadyRedeemed && alreadyRedeemed.blackRedeemed) {
-      throw new Error("User already redeemed black");
-    }
-
-    await collection.updateOne(
-      { address: ethaddress },
-      { $set: { blackRedeemed: true } }
-    );
-    return true;
-  } finally {
-    MongoPool.release(client);
+  if (alreadyRedeemed && alreadyRedeemed.blackRedeemed) {
+    throw new Error("User already redeemed black");
   }
+
+  await collection.updateOne(
+    { address: ethaddress },
+    { $set: { blackRedeemed: true } }
+  );
+
+  await client.close();
+  return true;
 };
 export const createUser = async (data) => {
   const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
@@ -57,24 +54,20 @@ export const getUser = async (address) => {
 };
 
 export const userHasRedeemed = async (address) => {
-  const client = await MongoPool.acquire();
-  try {
-    let ethAddress = utils.getAddress(address);
+  let ethAddress = utils.getAddress(address);
 
-    // const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
-    const db = client.db(dbName);
-    const collection = db.collection("users");
+  const client = await MongoClient.connect(URI, { useUnifiedTopology: true });
+  const db = client.db(dbName);
+  const collection = db.collection("users");
 
-    const document = await collection.findOne({
-      address: ethAddress,
-      blackRedeemed: true,
-    });
-    console.debug(ethAddress);
+  const document = await collection.findOne({
+    address: ethAddress,
+    blackRedeemed: true,
+  });
+  console.debug(ethAddress);
+  await client.close();
 
-    return document !== null;
-  } finally {
-    MongoPool.release(client);
-  }
+  return document !== null;
 };
 
 export const userHasRedeemedBlack = async (address) => {

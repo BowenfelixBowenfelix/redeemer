@@ -1,7 +1,6 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { ethers } from "ethers";
 import { abi } from "../contracts/antonym_abi.json";
-import { MongoPool } from "./mongo.mjs";
 
 const https = require("https");
 
@@ -9,29 +8,19 @@ const URI = process.env.VITE_MONGODB_URL;
 const dbName = process.env.VITE_MONGODB_NAME;
 const scAddress = process.env.VITE_CONTRACT_ADDRESS;
 
-// const client = new MongoClient(URI, {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-//   serverApi: ServerApiVersion.v1,
-// });
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+  serverApi: ServerApiVersion.v1,
 });
+
 
 const useCollection = async (collectionName) => {
   await client.connect();
   const db = client.db(dbName);
   const collection = db.collection(collectionName);
-  return collection;
-};
+  return collection
+}
 
 export const getTokens = async (filter) => {
   const tokens = await useCollection("tokens");
@@ -44,13 +33,13 @@ export const listRedeemedTokens = async () => {
   const collection = await useCollection("tokens");
   const arr = await collection.find({ redeemed: true }).toArray();
   await client.close();
-  const ids = arr.map((doc) => doc.tokenID);
+  const ids = arr.map(doc => doc.tokenID)
   return ids;
-};
+}
 
 export const find = async (tokenID) => {
   const collection = await useCollection("tokens");
-  let document = null;
+  let document = null
   // let document = await collection.findOne({ tokenID: tokenID });
   if (!document) {
     document = await fetchNftById(tokenID);
@@ -59,31 +48,21 @@ export const find = async (tokenID) => {
 };
 
 export const findOrFetch = async (tokenuri, ownerAddress) => {
-  const client = await MongoPool.acquire();
-  try {
-    const db = client.db(dbName);
-    const collection = db.collection("tokens");
-    const nftID = tokenuri.substring(tokenuri.lastIndexOf("/") + 1);
-    const document = await collection.findOne({ tokenID: nftID });
-    if (document == null) {
-      try {
-        const nftmeta = await fetchNft(tokenuri);
+  const nftID = tokenuri.substring(tokenuri.lastIndexOf("/") + 1);
+  const collection = await useCollection("tokens");
+  const document = await collection.findOne({ tokenID: nftID });
+  if (document == null) {
+    try {
+      const nftmeta = await fetchNft(tokenuri);
 
-        const nftObj = JSON.parse(nftmeta);
-        collection.insertOne({
-          ...nftObj,
-          tokenID: nftID,
-          owner: ownerAddress,
-        });
-        return JSON.stringify(nftObj);
-      } catch (error) {
-        return JSON.stringify(error);
-      }
+      const nftObj = JSON.parse(nftmeta);
+      collection.insertOne({ ...nftObj, tokenID: nftID, owner: ownerAddress });
+      return JSON.stringify(nftObj);
+    } catch (error) {
+      return JSON.stringify(error);
     }
-    return document;
-  } finally {
-    MongoPool.release(client);
   }
+  return document;
 };
 
 export const updateTokens = async (filter, data) => {
@@ -102,11 +81,10 @@ export const updateToken = async (tokenID, _data) => {
 
 export const refreshMeta = async (tokenID) => {
   https.get(
-    `https://api.opensea.io/api/v1/asset/${scAddress}/${tokenID}/?force_update=true`,
-    {
+    `https://api.opensea.io/api/v1/asset/${scAddress}/${tokenID}/?force_update=true`,{
       headers: {
-        "X-API-KEY": process.env.OPENSEA_API_KEY,
-      },
+        'X-API-KEY': process.env.OPENSEA_API_KEY
+      }
     }
   );
 };
