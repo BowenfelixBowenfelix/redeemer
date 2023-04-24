@@ -1,3 +1,4 @@
+import { createPool } from "generic-pool";
 import { MongoClient } from "mongodb";
 
 const URI = process.env.VITE_MONGODB_URL;
