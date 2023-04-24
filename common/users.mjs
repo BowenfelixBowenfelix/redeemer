@@ -1,5 +1,6 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { utils } from "ethers";
+import { MongoPool } from "./mongo.mjs";
 
 const dbName = process.env.VITE_MONGODB_NAME;
 const URI = process.env.VITE_MONGODB_URL;
