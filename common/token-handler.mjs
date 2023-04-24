@@ -59,21 +59,31 @@ export const find = async (tokenID) => {
 };
 
 export const findOrFetch = async (tokenuri, ownerAddress) => {
-  const nftID = tokenuri.substring(tokenuri.lastIndexOf("/") + 1);
-  const collection = await useCollection("tokens");
-  const document = await collection.findOne({ tokenID: nftID });
-  if (document == null) {
-    try {
-      const nftmeta = await fetchNft(tokenuri);
+  const client = await MongoPool.acquire();
+  try {
+    const db = client.db(dbName);
+    const collection = db.collection("tokens");
+    const nftID = tokenuri.substring(tokenuri.lastIndexOf("/") + 1);
+    const document = await collection.findOne({ tokenID: nftID });
+    if (document == null) {
+      try {
+        const nftmeta = await fetchNft(tokenuri);
 
-      const nftObj = JSON.parse(nftmeta);
-      collection.insertOne({ ...nftObj, tokenID: nftID, owner: ownerAddress });
-      return JSON.stringify(nftObj);
-    } catch (error) {
-      return JSON.stringify(error);
+        const nftObj = JSON.parse(nftmeta);
+        collection.insertOne({
+          ...nftObj,
+          tokenID: nftID,
+          owner: ownerAddress,
+        });
+        return JSON.stringify(nftObj);
+      } catch (error) {
+        return JSON.stringify(error);
+      }
     }
+    return document;
+  } finally {
+    MongoPool.release(client);
   }
-  return document;
 };
 
 export const updateTokens = async (filter, data) => {
